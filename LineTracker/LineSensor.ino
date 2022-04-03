@@ -36,8 +36,8 @@ void detectLine(void) {
 
 uint8_t readSensors(void) {
   uint8_t state  = S1_IN_S2_IN;
-  bool s1State = !digitalRead(LINESENSOR1);
-  bool s2State = !digitalRead(LINESENSOR2);
+  bool s1State = digitalRead(LINESENSOR1);
+  bool s2State = digitalRead(LINESENSOR2);
   state = ( (1 & s1State) << 1) | s2State;
   return(state);  
 }
