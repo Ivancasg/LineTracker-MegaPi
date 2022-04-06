@@ -1,10 +1,11 @@
 #define TEST_MOTORS 0
+#define TEST_SENSORS 0
 
 int sensorVal_1 = 0;
 int sensorVal_2 = 0;
 
-#define LINESENSOR1 A9
-#define LINESENSOR2 A10
+#define LINESENSOR1 A10
+#define LINESENSOR2 A9
 
 #define MOTORA_PWM 11
 #define MOTORA_EN  31
@@ -16,7 +17,7 @@ int sensorVal_2 = 0;
 #define MOTORB_IN1 34
 #define MOTORB_IN2 35
 
-int16_t moveSpeed = 180;
+int16_t moveSpeed = 90;
 int16_t last_speed;
 int16_t LineFollowFlag=0;
 
@@ -32,8 +33,10 @@ void setup() {
   pinMode(MOTORB_IN1,OUTPUT);
   pinMode(MOTORB_IN2,OUTPUT);
 
-  setSpeed(120);
+  setSpeed(90);
   enableMotors();
+
+  Serial.begin(9600);
 
 }
 
@@ -60,16 +63,17 @@ void loop() {
       runMotorB(-moveSpeed);
       Serial.println("Run MotorB Backward");
       delay(1000);        
-  }else {
+  }
+
+  if(TEST_SENSORS){
     sensorVal_1 =  analogRead(LINESENSOR1);
-    sensorVal_2 =  analogRead(LINESENSOR1);
+    sensorVal_2 =  analogRead(LINESENSOR2);
     Serial.print("Sensor 1 = ");
     Serial.print(sensorVal_1);
     Serial.print("Sensor 2 = ");
     Serial.println(sensorVal_2);
   }
- 
-  //detectLine();
+ detectLine();
 }
 
 void detectLine(void) {
@@ -79,31 +83,38 @@ void detectLine(void) {
   {
     case 0b00:
       Forward();
-      LineFollowFlag=10;
+//      LineFollowFlag=10;
       break;
 
     case 0b01:
-       Forward();
-      if (LineFollowFlag>1) LineFollowFlag--;
+       TurnLeft();
+//       Forward();
+//      if (LineFollowFlag>1) LineFollowFlag--;
       break;
 
     case 0b10:
-      Forward();
-      if (LineFollowFlag<20) LineFollowFlag++;
+       TurnRight();
+//      Forward();
+//      if (LineFollowFlag<20) LineFollowFlag++;
       break;
 
     case 0b11:
-      if(LineFollowFlag==10) Backward();
-      if(LineFollowFlag<10) TurnLeft1();
-      if(LineFollowFlag>10) TurnRight1();
+        TurnLeft1();
+//      if(LineFollowFlag==10) Backward();
+//      if(LineFollowFlag<10) TurnLeft1();
+//      if(LineFollowFlag>10) TurnRight1();
       break;
   }
 }
 
 uint8_t readSensors(void) {
   uint8_t state  = 0b00;
-  bool s1State = digitalRead(LINESENSOR1);
-  bool s2State = digitalRead(LINESENSOR2);
+  bool s1State;
+  bool s2State;
+  if(analogRead(LINESENSOR1) > 600) s1State = 1;
+  else s1State = 0;
+  if(analogRead(LINESENSOR2) > 600) s2State = 1;
+  else s2State = 0;
   state = ( (1 & s1State) << 1) | s2State;
   return(state);  
 }
@@ -192,41 +203,41 @@ void setSpeed(int16_t speed)
 void Forward(void)
 {
   runMotorA(moveSpeed);
-  runMotorB(-moveSpeed);
+  runMotorB(moveSpeed);
 }
 void Backward(void)
 {
   runMotorA(-moveSpeed);
-  runMotorB(moveSpeed);
+  runMotorB(-moveSpeed);
 }
 void BackwardAndTurnLeft(void)
 {
-  runMotorA(-moveSpeed/4);
-  runMotorB(moveSpeed);
+  runMotorA(-moveSpeed);
+  runMotorB(-moveSpeed/4);
 }
 void BackwardAndTurnRight(void)
 {
-  runMotorA(-moveSpeed);
-  runMotorB(moveSpeed/4);
+  runMotorA(-moveSpeed/4);
+  runMotorB(-moveSpeed);
 }
 void TurnLeft(void)
 {
-  runMotorA(moveSpeed);
-  runMotorB(-moveSpeed/2);
+  runMotorA(moveSpeed/2);
+  runMotorB(moveSpeed);
 }
 void TurnRight(void)
 {
-  runMotorA(moveSpeed/2);
-  runMotorB(-moveSpeed);
+  runMotorA(moveSpeed);
+  runMotorB(moveSpeed/2);
 }
 void TurnLeft1(void)
 {
-  runMotorA(moveSpeed);
+  runMotorA(-moveSpeed);
   runMotorB(moveSpeed);
 }
 void TurnRight1(void)
 {
-  runMotorA(-moveSpeed);
+  runMotorA(moveSpeed);
   runMotorB(-moveSpeed);
 }
 void Stop(void)
