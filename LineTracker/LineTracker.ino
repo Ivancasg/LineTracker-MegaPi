@@ -1,18 +1,16 @@
-/*Agregar detection sensores de choque
-  Agregar deteccion sensor ultrasonico
-
-  Agregar control manual
-*/
 #include <SoftwareSerial.h>
 
-#define TEST_MOTORS 0
-#define TEST_SENSORS 0
+#define TEST_MOTORS   0
+#define TEST_SENSORS  0
 
-#define LINESENSOR1 A10
-#define LINESENSOR2 A9
+#define LINESENSOR1   A10
+#define LINESENSOR2   A9
 
-#define TOUCHSENSOR1 A8
-#define TOUCHSENSOR2 A7
+#define TOUCHSENSOR1  A8
+#define TOUCHSENSOR2  A7
+
+#define ECHOSENSOR    2
+#define TRIGSENSOR    3
 
 #define MOTORA_PWM 11
 #define MOTORA_EN  31
@@ -24,9 +22,10 @@
 #define MOTORB_IN1 34
 #define MOTORB_IN2 35
 
-SoftwareSerial Bluetooth(13,14);
+SoftwareSerial Bluetooth(13,14); //RX=13, TX=14
 
 int moveSpeed = 90;
+int sensorDistance = 30;
 int lastSpeed;
 int lastCase;
 
@@ -37,6 +36,9 @@ void setup() {
   pinMode(LINESENSOR1, INPUT);
   pinMode(LINESENSOR2, INPUT);
 
+  pinMode(TOUCHSENSOR1, INPUT);
+  pinMode(TOUCHSENSOR2, INPUT);
+
   pinMode(MOTORA_EN, OUTPUT);
   pinMode(MOTORB_EN, OUTPUT);
 
@@ -44,6 +46,10 @@ void setup() {
   pinMode(MOTORA_IN2, OUTPUT);
   pinMode(MOTORB_IN1, OUTPUT);
   pinMode(MOTORB_IN2, OUTPUT);
+  
+  pinMode(ECHOSENSOR, INPUT);
+  pinMode(TRIGSENSOR, OUTPUT);
+  digitalWrite(TRIGSENSOR, LOW);
 
   digitalWrite(MOTORA_EN, HIGH);    //Enable motors
   digitalWrite(MOTORB_EN, HIGH);
@@ -93,13 +99,13 @@ void loop() {
 
   if (Bluetooth.available()) {
     val = Bluetooth.read();
-    Serial.println(val); // Print the reading value
+    //Serial.println(val); // Print the reading value
     parseCommandControl(val);
     if (manualControl == true) parseCommandDirections(val);
     parseCommandCamera(val);
   }
 
-  if (manualControl == false) {
+  if (manualControl == false) { 
     if (!detectObject())detectLine();
     else Bluetooth.print('L');    
   }
@@ -147,9 +153,29 @@ uint8_t readSensors(void) {
 }
 
 bool detectObject(void) {
-  if (digitalRead(TOUCHSENSOR1) || digitalRead(TOUCHSENSOR2)) return true;
-  else return false;
+  
+  long timeTravel; //tiempo que demora en llegar el eco
+  long distanceTravel; //distancia en centimetros
+
+  digitalWrite(TRIGSENSOR, HIGH);
+  delayMicroseconds(10);          //Enviamos un pulso de 10us
+  digitalWrite(TRIGSENSOR, LOW);
+  
+  timeTravel = pulseIn(ECHOSENSOR, HIGH); //obtenemos el ancho del pulso
+  distanceTravel = timeTravel/59;         //escalamos el tiempo a una distancia en cm
+  
+//  Serial.print("Distancia: ");
+//  Serial.print(distanceTravel);      //Enviamos serialmente el valor de la distancia
+//  Serial.print("cm");
+//  Serial.println();
+//  delay(100);          //Hacemos una pausa de 100ms
+
+  if (distanceTravel < sensorDistance) return true;  
+  if (digitalRead(TOUCHSENSOR1) || digitalRead(TOUCHSENSOR2)) return true; 
+  
+  return false;  
 }
+
 void runMotorA(int16_t speed)
 {
   speed = speed > 255 ? 255 : speed;
@@ -268,10 +294,10 @@ void Stop(void)
 }
 void parseCommandControl(char input) {
   switch (input) {
-    case '$':
+    case 'A':
       manualControl = true; 
       break;
-    case '&':
+    case 'D':
       manualControl = false; 
       break;    
   }
