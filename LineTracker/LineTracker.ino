@@ -21,7 +21,7 @@
 #define MOTORB_IN2 35
 
 int moveSpeed = 90;
-int sensorDistance = 30;
+int sensorDistance = 50;
 int lastSpeed;
 int lastCase;
 
@@ -64,22 +64,22 @@ void loop() {
     runMotorA(moveSpeed);
     runMotorB(0);
     Serial.println("Run MotorA Forward");
-    delay(1000);
+    delay(2000);
     //Run MOTOR_A BACKWARD
     runMotorA(-moveSpeed);
     runMotorB(0);
     Serial.println("Run MotorA Backward");
-    delay(1000);
+    delay(2000);
     //Run MOTOR_B FORWARD
     runMotorA(0);
     runMotorB(moveSpeed);
     Serial.println("Run MotorB Forward");
-    delay(1000);
+    delay(2000);
     //Run MOTOR_B BACKWARD
     runMotorA(0);
     runMotorB(-moveSpeed);
     Serial.println("Run MotorB Backward");
-    delay(1000);
+    delay(2000);
   }
 
   if (TEST_SENSORS) {
@@ -93,16 +93,17 @@ void loop() {
     sensorVal_4 =  digitalRead(TOUCHSENSOR2);
     Serial.print("Sensor 1 = ");
     Serial.print(sensorVal_1);
-    Serial.print("Sensor 2 = ");
+    Serial.print("\tSensor 2 = ");
     Serial.print(sensorVal_2);
-    Serial.print("Sensor 3 = ");
+    Serial.print("\tSensor 3 = ");
     Serial.print(sensorVal_3);
-    Serial.print("Sensor 4 = ");
+    Serial.print("\tSensor 4 = ");
     Serial.println(sensorVal_4);
   }
 
   if (Serial3.available()) {
     val = Serial3.read();
+    Serial.print("Bluetooth read = ");
     Serial.println(val); // Print the reading value
     parseCommandControl(val);
     if (manualControl == true) parseCommandDirections(val);
@@ -114,6 +115,7 @@ void loop() {
     else {
       Serial3.print('L');
       Serial.println("Object detected");
+      delay(100);
     }    
   }
 
@@ -162,17 +164,26 @@ uint8_t readSensors(void) {
 bool detectObject(void) {
 
   long timeTravel; //tiempo que demora en llegar el eco
-  long distanceTravel; //distancia en centimetros
-
+  long distanceTravel; //distancia en centimetros  
+  
+  digitalWrite(TRIGSENSOR, LOW);
+  delayMicroseconds(2);           //Clear the Trigger pin
   digitalWrite(TRIGSENSOR, HIGH);
   delayMicroseconds(10);          //Enviamos un pulso de 10us
   digitalWrite(TRIGSENSOR, LOW);
 
-  timeTravel = pulseIn(ECHOSENSOR, HIGH); //obtenemos el ancho del pulso
-  distanceTravel = timeTravel / 59;       //escalamos el tiempo a una distancia en cm
+  timeTravel = pulseIn(ECHOSENSOR, HIGH, 2000); //obtenemos el ancho del pulso
+  timeTravel = timeTravel == 0 ? 9999 : timeTravel; //Si el tiempo es 0 asignar 9999
+  distanceTravel = timeTravel / 59; //escalamos el tiempo a una distancia en cm
 
-  //if (distanceTravel < sensorDistance) return true;
-  //if (digitalRead(TOUCHSENSOR1) || digitalRead(TOUCHSENSOR2)) return true;
+  if (distanceTravel < sensorDistance){
+    Serial.println("Object detected by ultrasonic sensor");
+    //return true;
+  }
+  if (digitalRead(TOUCHSENSOR1) || digitalRead(TOUCHSENSOR2)) {
+    Serial.println("Object detected by impact sensors");
+    //return true;
+  }
 
   return false;
 }
@@ -302,9 +313,11 @@ void Stop(void)
 void parseCommandControl(char input) {
   switch (input) {
     case 'A':
+      Serial.println("Manual Control ON");
       manualControl = true;
       break;
     case 'D':
+      Serial.println("Manual Control OFF");
       manualControl = false;
       break;
   }
