@@ -32,8 +32,7 @@ int sensorDistance = 50;
 int lastCase;
 
 double stepsPerRevolution = 2048;
-int steps = 20;
-Stepper myStepper(stepsPerRevolution, 8, 10, 9, 11);  // Pin inversion 
+Stepper myStepper(stepsPerRevolution, 48, 47, 43, 42);
 
 bool manualControl = false;
 char val;
@@ -218,16 +217,17 @@ bool detectObject(void) {
 
   if (distanceTravel1 < sensorDistance) {
     Serial.println("Object detected by ultrasonic sensor 1");
-    Serial3.print('M');
+    Serial3.write('L');
     return true;
   }
   if (distanceTravel2 < sensorDistance) {
     Serial.println("Object detected by ultrasonic sensor 2");
-    Serial3.print('L');
+    Serial3.write('M');
     return true;
   }
   if (!digitalRead(TOUCHSENSOR1)) {
     Serial.println("Object detected by impact sensors");
+    Serial3.write('N');
     return true;
   }
 
@@ -386,13 +386,13 @@ void parseCommandCamera(char input) {
 }
 
 void TurnCameraLeft(void){     
-  myStepper.step(steps); 
+  myStepper.step(stepsPerRevolution); 
   Serial.println("Stepper motor counterclockwise");   
 }
 
 void TurnCameraRight(void){
-  myStepper.step(steps); 
-  Serial.println("Stepper motor counterclockwise");  
+  myStepper.step(-stepsPerRevolution); 
+  Serial.println("Stepper motor clockwise");  
 }
 
 void StopCamera(void){
