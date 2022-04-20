@@ -1,5 +1,9 @@
+#include <Stepper.h> 
+
 #define TEST_MOTORS   0
 #define TEST_SENSORS  0
+
+#define MAIN_CODE     0
 
 #define LINESENSOR1   A10
 #define LINESENSOR2   A9
@@ -7,8 +11,11 @@
 #define TOUCHSENSOR1  A8
 #define TOUCHSENSOR2  A7
 
-#define ECHOSENSOR    A11
-#define TRIGSENSOR    A12
+#define ECHOSENSOR1    4
+#define TRIGSENSOR1    5
+
+#define ECHOSENSOR2    6
+#define TRIGSENSOR2    9
 
 #define MOTORA_PWM 11
 #define MOTORA_EN  31
@@ -22,8 +29,11 @@
 
 int moveSpeed = 90;
 int sensorDistance = 50;
-int lastSpeed;
 int lastCase;
+
+double stepsPerRevolution = 2048;
+int steps = 20;
+Stepper myStepper(stepsPerRevolution, 8, 10, 9, 11);  // Pin inversion 
 
 bool manualControl = false;
 char val;
@@ -43,14 +53,18 @@ void setup() {
   pinMode(MOTORB_IN1, OUTPUT);
   pinMode(MOTORB_IN2, OUTPUT);
 
-  pinMode(ECHOSENSOR, INPUT);
-  pinMode(TRIGSENSOR, OUTPUT);
-  digitalWrite(TRIGSENSOR, LOW);
+  pinMode(ECHOSENSOR1, INPUT);
+  pinMode(TRIGSENSOR1, OUTPUT);
+  pinMode(ECHOSENSOR2, INPUT);
+  pinMode(TRIGSENSOR2, OUTPUT);
+  digitalWrite(TRIGSENSOR1, LOW);
+  digitalWrite(TRIGSENSOR2, LOW);
 
   digitalWrite(MOTORA_EN, HIGH);    //Enable motors
   digitalWrite(MOTORB_EN, HIGH);
 
   moveSpeed = 90;
+  myStepper.setSpeed(10); 
 
   Serial.begin(9600);
   Serial3.begin(9600);
@@ -63,23 +77,31 @@ void loop() {
     //Run MOTOR_A FORWARD
     runMotorA(moveSpeed);
     runMotorB(0);
-    Serial.println("Run MotorA Forward");
     delay(2000);
+    runMotorA(0);
+    runMotorB(0);
+    delay(100);
     //Run MOTOR_A BACKWARD
     runMotorA(-moveSpeed);
     runMotorB(0);
-    Serial.println("Run MotorA Backward");
     delay(2000);
+    runMotorA(0);
+    runMotorB(0);
+    delay(100);
     //Run MOTOR_B FORWARD
     runMotorA(0);
     runMotorB(moveSpeed);
-    Serial.println("Run MotorB Forward");
     delay(2000);
+    runMotorA(0);
+    runMotorB(0);
+    delay(100);
     //Run MOTOR_B BACKWARD
     runMotorA(0);
     runMotorB(-moveSpeed);
-    Serial.println("Run MotorB Backward");
     delay(2000);
+    runMotorA(0);
+    runMotorB(0);
+    delay(100);
   }
 
   if (TEST_SENSORS) {
@@ -101,24 +123,29 @@ void loop() {
     Serial.println(sensorVal_4);
   }
 
-  if (Serial3.available()) {
-    val = Serial3.read();
-    Serial.print("Bluetooth read = ");
-    Serial.println(val); // Print the reading value
-    parseCommandControl(val);
-    if (manualControl == true) parseCommandDirections(val);
-    parseCommandCamera(val);
-  }
+  if (MAIN_CODE) {
+    if (Serial3.available()) {
+      val = Serial3.read();
+      Serial.print("Bluetooth read = ");
+      Serial.println(val); // Print the reading value
+      parseCommandControl(val);
+      if (manualControl == true) {
+        runMotorA(0);
+        runMotorB(0);
+        parseCommandDirections(val);
+      }
+      parseCommandCamera(val);
+    }
 
-  if (manualControl == false) {
-    if (!detectObject())detectLine();
-    else {
-      Serial3.print('L');
-      Serial.println("Object detected");
-      delay(100);
-    }    
+    if (manualControl == false) {
+      if (!detectObject())detectLine();
+      else {
+        runMotorA(0);
+        runMotorB(0);
+        delay(100);
+      }
+    }
   }
-
   delay(10);
 }
 
@@ -163,26 +190,45 @@ uint8_t readSensors(void) {
 
 bool detectObject(void) {
 
-  long timeTravel; //tiempo que demora en llegar el eco
-  long distanceTravel; //distancia en centimetros  
-  
-  digitalWrite(TRIGSENSOR, LOW);
+  long timeTravel1; //tiempo que demora en llegar el eco
+  long timeTravel2; //tiempo que demora en llegar el eco
+  long distanceTravel1; //distancia en centimetros
+  long distanceTravel2; //distancia en centimetros
+
+  digitalWrite(TRIGSENSOR1, LOW);
   delayMicroseconds(2);           //Clear the Trigger pin
-  digitalWrite(TRIGSENSOR, HIGH);
+  digitalWrite(TRIGSENSOR1, HIGH);
   delayMicroseconds(10);          //Enviamos un pulso de 10us
-  digitalWrite(TRIGSENSOR, LOW);
+  digitalWrite(TRIGSENSOR1, LOW);
 
-  timeTravel = pulseIn(ECHOSENSOR, HIGH, 2000); //obtenemos el ancho del pulso
-  timeTravel = timeTravel == 0 ? 9999 : timeTravel; //Si el tiempo es 0 asignar 9999
-  distanceTravel = timeTravel / 59; //escalamos el tiempo a una distancia en cm
+  timeTravel1 = pulseIn(ECHOSENSOR1, HIGH); //obtenemos el ancho del pulso
+  timeTravel1 = timeTravel1 == 0 ? 9999 : timeTravel1; //Si el tiempo es 0 asignar 9999
+  distanceTravel1 = timeTravel1 * 0.034 / 2; //escalamos el tiempo a una distancia en cm
 
-  if (distanceTravel < sensorDistance){
-    Serial.println("Object detected by ultrasonic sensor");
-    //return true;
+  digitalWrite(TRIGSENSOR2, LOW);
+  delayMicroseconds(2);           //Clear the Trigger pin
+  digitalWrite(TRIGSENSOR2, HIGH);
+  delayMicroseconds(10);          //Enviamos un pulso de 10us
+  digitalWrite(TRIGSENSOR2, LOW);
+
+  timeTravel2 = pulseIn(ECHOSENSOR2, HIGH); //obtenemos el ancho del pulso
+  timeTravel2 = timeTravel2 == 0 ? 9999 : timeTravel2; //Si el tiempo es 0 asignar 9999
+  distanceTravel2 = timeTravel2 * 0.034 / 2; //escalamos el tiempo a una distancia en cm
+  
+
+  if (distanceTravel1 < sensorDistance) {
+    Serial.println("Object detected by ultrasonic sensor 1");
+    Serial3.print('M');
+    return true;
   }
-  if (digitalRead(TOUCHSENSOR1) || digitalRead(TOUCHSENSOR2)) {
+  if (distanceTravel2 < sensorDistance) {
+    Serial.println("Object detected by ultrasonic sensor 2");
+    Serial3.print('L');
+    return true;
+  }
+  if (!digitalRead(TOUCHSENSOR1)) {
     Serial.println("Object detected by impact sensors");
-    //return true;
+    return true;
   }
 
   return false;
@@ -192,15 +238,6 @@ void runMotorA(int16_t speed)
 {
   speed = speed > 255 ? 255 : speed;
   speed = speed < -255 ? -255 : speed;
-
-  if (lastSpeed != speed)
-  {
-    lastSpeed = speed;
-  }
-  else
-  {
-    return;
-  }
 
   if (speed > 0)
   {
@@ -231,15 +268,6 @@ void runMotorB(int16_t speed)
 {
   speed = speed > 255 ? 255 : speed;
   speed = speed < -255 ? -255 : speed;
-
-  if (lastSpeed != speed)
-  {
-    lastSpeed = speed;
-  }
-  else
-  {
-    return;
-  }
 
   if (speed > 0)
   {
@@ -346,13 +374,28 @@ void parseCommandDirections(char input) {
 void parseCommandCamera(char input) {
   switch (input) {
     case '8':
-      //TurnCameraLeft();
+      TurnCameraLeft();
       break;
     case '6':
-      //TurnCameraRight();
+      TurnCameraRight();
       break;
     case '9':
-      //StopCamera();
+      StopCamera();
       break;
   }
+}
+
+void TurnCameraLeft(void){     
+  myStepper.step(steps); 
+  Serial.println("Stepper motor counterclockwise");   
+}
+
+void TurnCameraRight(void){
+  myStepper.step(steps); 
+  Serial.println("Stepper motor counterclockwise");  
+}
+
+void StopCamera(void){
+//  myStepper.step(steps); 
+//  Serial.println("Stepper motor counterclockwise");  
 }
