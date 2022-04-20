@@ -32,6 +32,7 @@ int sensorDistance = 50;
 int lastCase;
 
 double stepsPerRevolution = 2048;
+int steps = 20;
 Stepper myStepper(stepsPerRevolution, 48, 47, 43, 42);
 
 bool manualControl = false;
@@ -217,19 +218,21 @@ bool detectObject(void) {
 
   if (distanceTravel1 < sensorDistance) {
     Serial.println("Object detected by ultrasonic sensor 1");
-    Serial3.write('L');
+    Serial3.print("*LR200G0B0*");
     return true;
-  }
+  }else Serial3.print("*LR0G0B0*");
+  
   if (distanceTravel2 < sensorDistance) {
     Serial.println("Object detected by ultrasonic sensor 2");
-    Serial3.write('M');
+    Serial3.print("*MR200G0B0*");
     return true;
-  }
+  }else Serial3.print("*MR0G0B0*");
+  
   if (!digitalRead(TOUCHSENSOR1)) {
-    Serial.println("Object detected by impact sensors");
-    Serial3.write('N');
+    Serial.println("Object detected by impact sensor");
+    Serial3.print("*AR200G0B0*");
     return true;
-  }
+  }else Serial3.print("*AR0G0B0*");
 
   return false;
 }
@@ -386,16 +389,18 @@ void parseCommandCamera(char input) {
 }
 
 void TurnCameraLeft(void){     
-  myStepper.step(stepsPerRevolution); 
-  Serial.println("Stepper motor counterclockwise");   
+  myStepper.step(steps); 
+  Serial.println("Stepper motor counterclockwise");
+  delay(500);   
 }
 
 void TurnCameraRight(void){
-  myStepper.step(-stepsPerRevolution); 
-  Serial.println("Stepper motor clockwise");  
+  myStepper.step(-steps); 
+  Serial.println("Stepper motor clockwise");
+  delay(500);     
 }
 
 void StopCamera(void){
-//  myStepper.step(steps); 
-//  Serial.println("Stepper motor counterclockwise");  
+  myStepper.step(0); 
+  Serial.println("Stop motor");  
 }
