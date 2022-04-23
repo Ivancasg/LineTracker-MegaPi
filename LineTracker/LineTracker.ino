@@ -10,11 +10,11 @@
 #define TOUCHSENSOR1  A8
 #define TOUCHSENSOR2  A7
 
-#define ECHOSENSOR1    4
-#define TRIGSENSOR1    5
+#define ECHOSENSOR1   4
+#define TRIGSENSOR1   5
 
-#define ECHOSENSOR2    6
-#define TRIGSENSOR2    9
+#define ECHOSENSOR2   6
+#define TRIGSENSOR2   9
 
 #define MOTORA_PWM 11
 #define MOTORA_EN  31
@@ -26,10 +26,10 @@
 #define MOTORB_IN1 34
 #define MOTORB_IN2 35
 
-#define pinA 42
-#define pinB 43
-#define pinC 47
-#define pinD 48
+#define pinA A5
+#define pinB A4
+#define pinC A3
+#define pinD A2
 
 #define CLOCKWISE 1
 #define COUNTERCLOCKWISE 0
@@ -399,13 +399,11 @@ void parseCommandCamera(char input) {
 void TurnCameraLeft(void){     
   stepperRun(COUNTERCLOCKWISE, 100);
   Serial.println("Stepper motor counterclockwise");
-  delay(500);   
 }
 
 void TurnCameraRight(void){
   stepperRun(CLOCKWISE, 100);
   Serial.println("Stepper motor clockwise");
-  delay(500);     
 }
 
 void StopCamera(void){
@@ -452,33 +450,33 @@ void stepperRun (int direction, int steps)
     
    if (direction == COUNTERCLOCKWISE)
    {
-    for (int i = steps; i != 0; i--)
+    for (int i = 0; i != steps; i++)
     {
       switch (i % 4)
         {
           case 0:
           digitalWrite(pinA, HIGH);
-          digitalWrite(pinB, HIGH);
+          digitalWrite(pinB, LOW);
           digitalWrite(pinC, LOW);
-          digitalWrite(pinD, LOW);
+          digitalWrite(pinD, HIGH);
           break;
         case 1:
           digitalWrite(pinA, LOW);
+          digitalWrite(pinB, LOW);
+          digitalWrite(pinC, HIGH);
+          digitalWrite(pinD, HIGH);
+          break;
+        case 2:
+          digitalWrite(pinA, LOW);
           digitalWrite(pinB, HIGH);
           digitalWrite(pinC, HIGH);
           digitalWrite(pinD, LOW);
           break;
-        case 2:
-          digitalWrite(pinA, LOW);
-          digitalWrite(pinB, LOW);
-          digitalWrite(pinC, HIGH);
-          digitalWrite(pinD, HIGH);
-          break;
         case 3:
           digitalWrite(pinA, HIGH);
-          digitalWrite(pinB, LOW);
+          digitalWrite(pinB, HIGH);
           digitalWrite(pinC, LOW);
-          digitalWrite(pinD, HIGH);
+          digitalWrite(pinD, LOW);
           break;
         }
        delay(10);
