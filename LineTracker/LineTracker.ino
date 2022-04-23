@@ -1,9 +1,8 @@
-#include <Stepper.h> 
 
 #define TEST_MOTORS   0
 #define TEST_SENSORS  0
 
-#define MAIN_CODE     0
+#define MAIN_CODE     1
 
 #define LINESENSOR1   A10
 #define LINESENSOR2   A9
@@ -27,13 +26,17 @@
 #define MOTORB_IN1 34
 #define MOTORB_IN2 35
 
+#define pinA 42
+#define pinB 43
+#define pinC 47
+#define pinD 48
+
+#define CLOCKWISE 1
+#define COUNTERCLOCKWISE 0
+
 int moveSpeed = 90;
 int sensorDistance = 50;
 int lastCase;
-
-double stepsPerRevolution = 2048;
-int steps = 20;
-Stepper myStepper(stepsPerRevolution, 48, 47, 43, 42);
 
 bool manualControl = false;
 char val;
@@ -57,6 +60,12 @@ void setup() {
   pinMode(TRIGSENSOR1, OUTPUT);
   pinMode(ECHOSENSOR2, INPUT);
   pinMode(TRIGSENSOR2, OUTPUT);
+  
+  pinMode(pinA, OUTPUT);
+  pinMode(pinB, OUTPUT);
+  pinMode(pinC, OUTPUT);
+  pinMode(pinD, OUTPUT);
+  
   digitalWrite(TRIGSENSOR1, LOW);
   digitalWrite(TRIGSENSOR2, LOW);
 
@@ -64,7 +73,6 @@ void setup() {
   digitalWrite(MOTORB_EN, HIGH);
 
   moveSpeed = 90;
-  myStepper.setSpeed(10); 
 
   Serial.begin(9600);
   Serial3.begin(9600);
@@ -389,18 +397,91 @@ void parseCommandCamera(char input) {
 }
 
 void TurnCameraLeft(void){     
-  myStepper.step(steps); 
+  stepperRun(COUNTERCLOCKWISE, 100);
   Serial.println("Stepper motor counterclockwise");
   delay(500);   
 }
 
 void TurnCameraRight(void){
-  myStepper.step(-steps); 
+  stepperRun(CLOCKWISE, 100);
   Serial.println("Stepper motor clockwise");
   delay(500);     
 }
 
 void StopCamera(void){
-  myStepper.step(0); 
-  Serial.println("Stop motor");  
+//  stepperRun(COUNTERCLOCKWISE, 0);
+//  Serial.println("Stop motor");  
+}
+
+void stepperRun (int direction, int steps)
+{
+  if (direction == CLOCKWISE)
+  {
+    for (int i = 0; i != steps; i++)
+    {
+      switch (i % 4)
+      {
+        case 0:
+          digitalWrite(pinA, HIGH);
+          digitalWrite(pinB, HIGH);
+          digitalWrite(pinC, LOW);
+          digitalWrite(pinD, LOW);
+          break;
+        case 1:
+          digitalWrite(pinA, LOW);
+          digitalWrite(pinB, HIGH);
+          digitalWrite(pinC, HIGH);
+          digitalWrite(pinD, LOW);
+          break;
+        case 2:
+          digitalWrite(pinA, LOW);
+          digitalWrite(pinB, LOW);
+          digitalWrite(pinC, HIGH);
+          digitalWrite(pinD, HIGH);
+          break;
+        case 3:
+          digitalWrite(pinA, HIGH);
+          digitalWrite(pinB, LOW);
+          digitalWrite(pinC, LOW);
+          digitalWrite(pinD, HIGH);
+          break;
+      }
+      delay(10);
+    }  
+  }
+    
+   if (direction == COUNTERCLOCKWISE)
+   {
+    for (int i = steps; i != 0; i--)
+    {
+      switch (i % 4)
+        {
+          case 0:
+          digitalWrite(pinA, HIGH);
+          digitalWrite(pinB, HIGH);
+          digitalWrite(pinC, LOW);
+          digitalWrite(pinD, LOW);
+          break;
+        case 1:
+          digitalWrite(pinA, LOW);
+          digitalWrite(pinB, HIGH);
+          digitalWrite(pinC, HIGH);
+          digitalWrite(pinD, LOW);
+          break;
+        case 2:
+          digitalWrite(pinA, LOW);
+          digitalWrite(pinB, LOW);
+          digitalWrite(pinC, HIGH);
+          digitalWrite(pinD, HIGH);
+          break;
+        case 3:
+          digitalWrite(pinA, HIGH);
+          digitalWrite(pinB, LOW);
+          digitalWrite(pinC, LOW);
+          digitalWrite(pinD, HIGH);
+          break;
+        }
+       delay(10);
+     }  
+   }
 }
